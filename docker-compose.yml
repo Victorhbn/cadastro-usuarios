@@ -1,0 +1,60 @@
+version: "3.9"
+
+networks:
+  usuarios:
+    name: usuarios
+
+services:
+  app:
+    container_name: usuarios-app
+    build:
+      context: ./docker-compose
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - postgres
+    networks:
+      - usuarios
+
+  postgres:
+    container_name: usuarios-db
+    image: postgres:15
+    restart: always
+    volumes:
+      - ./docker-compose/postgres/data:/var/lib/postgres/data
+    environment:
+      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    networks:
+      - usuarios
+
+  web:
+    container_name: usuarios-web
+    image: nginx:stable-alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker-compose/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - usuarios
+
+  # Database management with pgAdmin
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: usuarios-pgAdmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - usuarios
+
